@@ -44,17 +44,6 @@
     "email": "dolores.clayton@freakin.tv"
   },
   {
-    "id": "5ad4def45752bcacfadea50e",
-    "isActive": true,
-    "age": 23,
-    "name": {
-      "first": "Noel",
-      "last": "Weiss"
-    },
-    "company": "BITTOR",
-    "email": "noel.weiss@bittor.io"
-  },
-  {
     "id": "5ad4def4d3c51c51299d00b3",
     "isActive": true,
     "age": 35,
@@ -64,5 +53,16 @@
     },
     "company": "PAPRIKUT",
     "email": "rowe.roy@paprikut.me"
+  },
+  {
+    "id": "5ad4def45752bcacfadea50e",
+    "isActive": true,
+    "age": 23,
+    "name": {
+      "first": "Noel",
+      "last": "Weiss"
+    },
+    "company": "BITTOR",
+    "email": "noel.weiss@bittor.io"
   }
 ]

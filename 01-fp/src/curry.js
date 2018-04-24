@@ -7,5 +7,6 @@
  * - `curry` is a pure function!
  * - Has auto currying after initial call
  */
-export function curry() {
+export function curry(fun) {
+  return fun
 }
