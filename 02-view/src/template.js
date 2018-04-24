@@ -14,46 +14,82 @@
  * el.outerHTML // <h1>Hallo, Welt!</h1>
  */
 
-const MATCH_ELEMENT = /<([a-z][a-z0-9]*\b[^>]*)>(.*?)<\/\1>/g;
-const MATCH_VARIABLE = /^\{\{(.+)\}\}$/;
+const ROOT_ELEMENT = /^<([\w][\w\d]*\b[^>]*)>.*?<\/\1>$/;
+const VARIABLE_NOT_WRAPPED = /<(\/*)[^<]*?>\{\{([\w\d]+?)\}\}<\1\w*?>/;
+const MATCH_ELEMENT = /<([\w][\w\d]*\b[^>]*)>(.*?)<\/\1>/;
+const MATCH_ALL_ELEMENTS = /<([\w][\w\d]*\b[^>]*)>(.*?)<\/\1>/g;
+const MATCH_VARIABLE = /^\{\{([\w\d]+?)\}\}$/;
+const MATCH_ALL_VARS = /\{\{([\w\d]+?)\}\}/g;
 
-function buildTemplate (string, { title }) {
-  MATCH_ELEMENT.lastIndex = 0;
-  const search = MATCH_ELEMENT.exec(string);
-  if(!search) return;
-  const [ match, tag, children, ...rest ] = search;
-  const el = document.createElement(tag)
-  let bound = false;
-
-  if(MATCH_VARIABLE.test(children)){
-    el.innerHTML = title;
-    bound = true;
+function build(templateString) {
+  if (!ROOT_ELEMENT.test(templateString)) {
+    throw new Error("template must be wrapped in a dom element");
+  }
+  if (VARIABLE_NOT_WRAPPED.test(templateString)) {
+    throw new Error("Variables must be wrapped in a dom element");
   }
 
-  MATCH_ELEMENT.lastIndex = 0; // reset regex
-  let child
-  if(MATCH_ELEMENT.test(children)){
-    child = buildTemplate(children, { title })
-    el.appendChild(child.el)
+  const variables = [];
+  const registeredVariables = new Set();
+
+  function registerElementToObserver(substring, element, VariableData) {
+    let match;
+    if ((match = substring.match(MATCH_VARIABLE)) !== null) {
+      const key = match[1];
+      variables[key].elements.push(element);
+      element.textContent = VariableData[key];
+    }
   }
 
-  return {
-    el,
-    bound,
-    child,
-    update: function ({ title }) {
-      if(bound){
-        el.innerHTML = title;
+  function setChildrenIfBranch(substring, element, VariableData) {
+    if (MATCH_ELEMENT.test(substring)) {
+      for (const childString of substring.match(MATCH_ALL_ELEMENTS)) {
+        element.appendChild(createTemplate(childString, VariableData).el);
       }
-      if (child) {
-        child.update({ title })
-      }
-    },
+    }
   }
-};
 
-function build(string) {
-  return buildTemplate.bind(this, string)
+  function createTemplate(string, VariableData) {
+    const search = string.match(MATCH_ELEMENT);
+    if (!search) return;
+    const [_, tag, substring] = search;
+
+    const element = document.createElement(tag);
+    registerElementToObserver(substring, element, VariableData);
+    setChildrenIfBranch(substring, element, VariableData);
+
+    return {
+      el: element,
+      update(values) {
+        Object.keys(values).forEach(key => {
+          if (!registeredVariables.has(key))
+            throw new Error(`template does not contain "${key}" variable`);
+          variables[key].update(values[key]);
+        });
+      }
+    };
+  }
+
+  function createObserver(string) {
+    let match;
+    while ((match = MATCH_ALL_VARS.exec(string)) !== null) {
+      const key = match[1];
+      if (!registeredVariables.has(key)) {
+        variables[key] = {
+          elements: [],
+          update(value) {
+            this.elements.forEach(element => {
+              element.textContent = value;
+            });
+          }
+        };
+        registeredVariables.add(key);
+      }
+    }
+  }
+
+  createObserver(templateString);
+  return createTemplate.bind(this, templateString);
 }
 
-export { build }
+export { build };
