@@ -1,10 +1,6 @@
-import { JSDOM } from "jsdom";
 import { build } from "../src/template";
 
 // provide DOM for tests
-const dom = new JSDOM(`<!DOCTYPE html>`);
-global.document = dom.window.document;
-
 describe("02-view", () => {
   describe("Build template", () => {
     it("should render one element with variable", () => {
@@ -21,6 +17,17 @@ describe("02-view", () => {
     it("should render nested element with variable", () => {
       const title = "Hello, World!";
       const template = "<h1><small>{{title}}</small></h1>";
+
+      const tpl = build(template);
+      const { el } = tpl({ title });
+      el.outerHTML.should.eql(`<h1><small>${title}</small></h1>`);
+    });
+  });
+
+  describe("Build nested templates", () => {
+    it("should render nested element with variable", () => {
+      const title = "Hello, World!";
+      const template = "<h1><small>{{title}}</small><small>{{title}}</small></h1>";
 
       const tpl = build(template);
       const { el } = tpl({ title });
@@ -52,7 +59,7 @@ describe("02-view", () => {
       const tpl = build(template);
       const { el, update } = tpl({ title: "" });
 
-      const n = 1000000;
+      const n = 100000;
       for (let i = 0; i < n; i += 1) {
         update({ title: `title:nth(${i})` });
       }
