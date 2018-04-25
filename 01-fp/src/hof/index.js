@@ -7,7 +7,9 @@
  * - Throws an error if exponent is invalid
  */
 export function pow(base, exponent) {
-  return Array(exponent).fill(base).reduce((product, factor) => product * factor)
+  return Array(exponent)
+    .fill(base)
+    .reduce((product, factor) => product * factor);
 }
 
 /*
@@ -17,6 +19,6 @@ export function pow(base, exponent) {
  * - Provides a primer for complex fields
  * - Throws an error if arguments are invalid
  */
-export function sortBy(field, primer=(value => value)) {
-  return (a, b) => primer(a[field]) > primer(b[field])
+export function sortBy(field, primer = value => value) {
+  return (a, b) => primer(a[field]) > primer(b[field]);
 }

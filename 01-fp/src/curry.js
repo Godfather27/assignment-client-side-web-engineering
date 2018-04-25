@@ -7,6 +7,8 @@
  * - `curry` is a pure function!
  * - Has auto currying after initial call
  */
-export function curry(fun) {
-  return fun
-}
+export const curry = (fun, length = fun.length, ...a) => {
+  if (length ^ a.length) return (...b) => curry(fun, length, ...a, ...b);
+  if (!a.length) return fun;
+  return fun(...a);
+};
