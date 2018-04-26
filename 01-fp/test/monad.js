@@ -42,7 +42,8 @@ describe("01-fp", () => {
 
       const result = $({})
         .style({ color: "red" })
-        .style({ color: "green" });
+        .style({ color: "green" })
+        .assert();
     });
   });
 });

@@ -53,7 +53,7 @@ describe("02-view", () => {
       el.outerHTML.should.eql(`<h1><small>${title2}</small></h1>`);
     });
 
-    it.only("should render and update huge template with variables", () => {
+    it("should render and update huge template with variables", () => {
       const title = "Hello, World!";
       const subtitle = "this is a template";
       const text =
