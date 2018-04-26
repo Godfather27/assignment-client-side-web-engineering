@@ -20,4 +20,20 @@
  *   .fadeOut();
  */
 export function d() {
+  const prototype = {};
+
+  const unit = value => {
+    const monad = Object.create(prototype);
+    monad.bind = (fn, args) => fn.call(value, ...args);
+    return monad;
+  };
+
+  unit.extend = (name, fn) => {
+    prototype[name] = function(...args) {
+      return unit(this.bind(fn, args));
+    };
+    return unit;
+  };
+
+  return unit;
 }
