@@ -29,31 +29,28 @@
  * - page()
  */
 
-let window;
+const WILDCARD = "*";
 
 function createRouter() {
-  let current;
-  let routes = [];
+  const routes = [];
 
-  const createRoute = (param, fun) => {
-    if (routes.some(e => e.route === param)) {
+  const replaceCallbackIfRedirect = callback => {
+    return typeof callback === "string"
+      ? () => changeRoute({ target: { location: { pathname: callback } } })
+      : callback;
+  };
+
+  const createRoute = (path, callback) => {
+    if (routes.some(e => e.route === path)) {
       console.warn("route already exists");
+    } else if (path === WILDCARD) {
+      routes.wildcard = callback;
     } else {
-      if (param === "*") {
-        routes.wildcard = fun;
-        return;
-      }
-      if (typeof fun === "string") {
-        const redirectTarget = fun;
-        fun = () => {
-          changeRoute({ target: { location: { pathname: redirectTarget } } });
-        };
-      }
       routes.push({
-        path: param,
-        regex: new RegExp(`^${param.replace(/:[\w-_]*/g, "([\\w-_]*)")}$`),
-        params: param.match(/:([\w-_]*)/g),
-        fun
+        path,
+        regex: new RegExp(`^${path.replace(/:[\w-_]*/g, "([\\w-_]*)")}$`),
+        params: path.match(/:([\w-_]*)/g),
+        callback: replaceCallbackIfRedirect(callback)
       });
     }
   };
@@ -71,65 +68,58 @@ function createRouter() {
     }
   };
 
-  const changeRoute = event => {
-    let target = event.target.location.pathname;
-    if (routes.length === 0) {
-      router.error = Error("no routes defined");
-    } else if (!routes.some(route => route.regex.test(target))) {
-      router.error = Error("Route not defined");
-    }
-
-    let changed = false;
-    routes.forEach(route => {
-      if (route.regex.test(target)) {
-        const [_, ...values] = target.match(route.regex);
-        const ctx = { params: {} };
-
-        if (!!route.params) {
-          route.params.forEach((param, idx) => {
-            ctx.params[param.substr(1)] = values[idx];
-          });
-        }
-        window.history.pushState({}, target, target);
-        route.fun(ctx);
-        router.current = route.path;
-        changed = true;
-      }
-    });
-
-    if (!changed && !!routes.wildcard) {
-      routes.wildcard({});
-      window.history.pushState({}, target, target);
-      router.current = "/*";
-    }
-  };
-
-  const router = (param, fun = () => {}) => {
-    if (typeof param === "object") {
-      window = param.window || document.defaultView;
-      window.addEventListener("popstate", changeRoute);
-      [...window.document.getElementsByTagName("a")].forEach(button => {
-        button.addEventListener("click", changeRouteOnClick);
+  const setContext = (route, target) => {
+    const [_, ...values] = target.match(route.regex);
+    const ctx = { params: {} };
+    if (!!route.params) {
+      route.params.forEach((param, idx) => {
+        ctx.params[param.substr(1)] = values[idx];
       });
-    } else if (typeof param === "string") {
-      createRoute(param, fun);
+    }
+    return ctx;
+  };
+
+  const commitWildcard = pathname => {
+    routes.wildcard({});
+    window.history.pushState({}, pathname, pathname);
+    router.current = WILDCARD;
+  };
+
+  const commitRoute = (route, pathname) => {
+    const ctx = setContext(route, pathname);
+    window.history.pushState({}, pathname, pathname);
+    route.callback(ctx);
+    router.current = route.path;
+  };
+
+  const changeRoute = ({ target: { location: { pathname } } }) => {
+    if (!routes.length) router.error = Error("no routes defined");
+    const route = routes.filter(route => route.regex.test(pathname)).shift();
+    if (route) {
+      commitRoute(route, pathname);
+    } else if (routes.wildcard) {
+      commitWildcard(pathname);
     }
   };
 
+  const setWindow = param => {
+    if (typeof param !== "undefined") {
+      global.window = param.window;
+    }
+    if (typeof window !== "undefined") {
+      window.addEventListener("popstate", changeRoute);
+      window.addEventListener("click", changeRouteOnClick);
+    }
+  };
+
+  const router = (param, callback) => {
+    typeof param === "object" ? setWindow(param) : createRoute(param, callback);
+  };
   router.current = "/";
   router.error;
+  setWindow();
 
   return router;
 }
 
 export { createRouter };
-
-
-// if (!router.listener) {
-//   window = param.window || document.defaultView;
-//   router.listener = window.addEventListener("popstate", changeRoute);
-// } else {
-//   window.removeEventListener("popstate", router.listener);
-//   window = param.window || document.defaultView;
-//   router.listener = window.addEventListener("popstate", changeRoute);
-// }
