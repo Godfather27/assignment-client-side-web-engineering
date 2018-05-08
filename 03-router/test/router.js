@@ -1,5 +1,6 @@
-import { createWindow, changeLocation, clickLink } from "./dom";
 import { createRouter } from "../src/router";
+
+import { createWindow, changeLocation, clickLink } from "./dom";
 
 const BASE_URL = "https://example.org";
 
@@ -168,6 +169,8 @@ describe("03-router", () => {
       router("/home", () => done());
       router("*", () => done(new Error("Route not redirected")));
       router({ window });
+
+      changeLocation(dom, `${BASE_URL}/`);
     });
   });
 
